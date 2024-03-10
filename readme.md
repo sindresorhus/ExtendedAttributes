@@ -7,7 +7,7 @@
 Add the following to `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/sindresorhus/ExtendedAttributes", from: "0.0.0")
+.package(url: "https://github.com/sindresorhus/ExtendedAttributes", from: "1.0.0")
 ```
 
 [Or add the package in Xcode.](https://developer.apple.com/documentation/xcode/adding-package-dependencies-to-your-app)
