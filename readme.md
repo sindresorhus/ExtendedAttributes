@@ -14,7 +14,7 @@ Add the following to `Package.swift`:
 
 ## API
 
-~~See the [documentation](https://swiftpackageindex.com/sindresorhus/ExtendedAttributes/documentation).~~ (Soon)
+See the [documentation](https://swiftpackageindex.com/sindresorhus/ExtendedAttributes/documentation/extendedattributes).
 
 ## Related
 
