@@ -12,6 +12,24 @@ Add the following to `Package.swift`:
 
 [Or add the package in Xcode.](https://developer.apple.com/documentation/xcode/adding-package-dependencies-to-your-app)
 
+## Usage
+
+```swift
+import ExtendedAttributes
+
+let fileURL = URL(filePath: "/path/to/file")
+let data = try? fileURL.extendedAttributes.get("com.example.attribute")
+```
+
+You can also use it to access system-specific metadata:
+
+```swift
+import ExtendedAttributes
+
+let fileURL = URL(filePath: "/path/to/file")
+let itemCreator = try? fileURL.systemMetadata.get(kMDItemCreator as String)
+```
+
 ## API
 
 See the [documentation](https://swiftpackageindex.com/sindresorhus/ExtendedAttributes/documentation/extendedattributes).

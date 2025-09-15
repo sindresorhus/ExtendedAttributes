@@ -9,11 +9,16 @@ Use the ``Foundation/URL/extendedAttributes`` property on a URL to access this c
 ```swift
 import ExtendedAttributes
 
-let fileURL = URL(fileURLWithPath: "/path/to/file")
+let fileURL = URL(filePath: "/path/to/file")
+
+// Raw access
 let data = try? fileURL.extendedAttributes.get("com.example.attribute")
+
+// Strongly-typed names
+let isProtected = try? fileURL.extendedAttributes.get(.isProtected) // Bool
 ```
 */
-public final class ExtendedAttributes {
+public final class ExtendedAttributes: Sendable {
 	private let url: URL
 
 	init(url: URL) {
@@ -54,6 +59,10 @@ public final class ExtendedAttributes {
 		}
 
 		try url.withUnsafeFileSystemRepresentation { fileSystemPath in
+			guard let fileSystemPath else {
+				throw CocoaError(.fileReadUnsupportedScheme)
+			}
+
 			try Errno.wrap {
 				data.withUnsafeBytes {
 					setxattr(fileSystemPath, finalName, $0.baseAddress, data.count, 0, 0)
@@ -73,6 +82,10 @@ public final class ExtendedAttributes {
 		try checkIfFileURL()
 
 		return try url.withUnsafeFileSystemRepresentation { fileSystemPath in
+			guard let fileSystemPath else {
+				throw CocoaError(.fileReadUnsupportedScheme)
+			}
+
 			let size = getxattr(fileSystemPath, name, nil, 0, 0, 0)
 
 			if size >= 0 {
@@ -104,6 +117,16 @@ public final class ExtendedAttributes {
 	/**
 	Retrieves all extended attribute names of the file.
 
+	- Returns: An array of attribute names without flags.
+	- Throws: An error if the file is not accessible or the operation fails.
+	*/
+	public func allNames() throws -> [String] {
+		try allNames(withFlags: false)
+	}
+
+	/**
+	Retrieves all extended attribute names of the file.
+
 	- Parameter withFlags: Specifies whether the names should include flags (e.g., `com.apple.metadata:kMDItemCreator#S`).
 	- Returns: An array of attribute names.
 	- Throws: An error if the file is not accessible or the operation fails.
@@ -112,6 +135,10 @@ public final class ExtendedAttributes {
 		try checkIfFileURL()
 
 		let data: Data = try url.withUnsafeFileSystemRepresentation { fileSystemPath in
+			guard let fileSystemPath else {
+				throw CocoaError(.fileReadUnsupportedScheme)
+			}
+
 			let size = listxattr(fileSystemPath, nil, 0, 0)
 
 			guard size >= 0 else {
@@ -142,7 +169,7 @@ public final class ExtendedAttributes {
 
 	private func checkIfFileURL() throws {
 		guard url.isFileURL else {
-			throw CocoaError(.fileNoSuchFile)
+			throw CocoaError(.fileReadUnsupportedScheme)
 		}
 	}
 
@@ -150,6 +177,10 @@ public final class ExtendedAttributes {
 		try checkIfFileURL()
 
 		return try url.withUnsafeFileSystemRepresentation { fileSystemPath in
+			guard let fileSystemPath else {
+				throw CocoaError(.fileReadUnsupportedScheme)
+			}
+
 			let size = getxattr(fileSystemPath, name, nil, 0, 0, 0)
 
 			guard size >= 0 else {
@@ -174,6 +205,10 @@ public final class ExtendedAttributes {
 		try checkIfFileURL()
 
 		try url.withUnsafeFileSystemRepresentation { fileSystemPath in
+			guard let fileSystemPath else {
+				throw CocoaError(.fileReadUnsupportedScheme)
+			}
+
 			try Errno.wrap {
 				removexattr(fileSystemPath, name, 0)
 			}
@@ -181,7 +216,7 @@ public final class ExtendedAttributes {
 	}
 
 	// TODO: Add subscript when Swift supports throwing setters.
-	// `try url.extendedAttributes["foo"] = "bar".toData
+	// `try url.extendedAttributes["foo"] = "bar".data(using: .utf8)!`
 }
 
 extension ExtendedAttributes {

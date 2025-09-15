@@ -1,7 +1,7 @@
 import Darwin
 
 extension ExtendedAttributes {
-	public struct Flags: OptionSet {
+	public struct Flags: OptionSet, Sendable {
 		/**
 		Declare that the attribute should not be exported. This is deliberately a bit vague, but this is used by `XATTR_OPERATION_INTENT_SHARE` to indicate not to preserve the attribute.
 		*/
@@ -10,7 +10,7 @@ extension ExtendedAttributes {
 		/**
 		Declares the  attribute to be tied to the contents of the file (or vice versa), such that it should be re-created when the contents of the file change. Examples might include cryptographic keys, checksums, saved position or search information, and text encoding.
 
-		This property causes the attribute to be preserved for copy and share, but not for safe save. In a safe save, the attriubte exists on the original, and will not be copied to the new version.
+		This property causes the attribute to be preserved for copy and share, but not for safe save. In a safe save, the attribute exists on the original, and will not be copied to the new version.
 		*/
 		public static let contentDependent = Self(rawValue: XATTR_FLAG_CONTENT_DEPENDENT)
 
@@ -20,7 +20,7 @@ extension ExtendedAttributes {
 		public static let neverPreserve = Self(rawValue: XATTR_FLAG_NEVER_PRESERVE)
 
 		/**
-		Declares that the attribute is to be synced, used by the `XATTR_OPERATION_ITENT_SYNC` intention. Syncing tends to want to minimize the amount of metadata synced around, hence the default behavior is for the attribute NOT to be synced, even if it would else be preserved for the `XATTR_OPERATION_ITENT_COPY` intention.
+		Declares that the attribute is to be synced, used by the `XATTR_OPERATION_INTENT_SYNC` intention. Syncing tends to want to minimize the amount of metadata synced around, hence the default behavior is for the attribute NOT to be synced, even if it would else be preserved for the `XATTR_OPERATION_INTENT_COPY` intention.
 		*/
 		public static let syncable = Self(rawValue: XATTR_FLAG_SYNCABLE)
 

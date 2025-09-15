@@ -2,23 +2,12 @@
 
 Extended attributes allow storage of additional metadata beyond the standard filesystem attributes, such as custom data, security information, or system tags.
 
-## Usage
+## Overview
 
-```swift
-import ExtendedAttributes
+This package provides two main APIs:
 
-let fileURL = URL(fileURLWithPath: "/path/to/file")
-let data = try? fileURL.extendedAttributes.get("com.example.attribute")
-```
-
-You can also use it to access system-specific metadata:
-
-```swift
-import ExtendedAttributes
-
-let fileURL = URL(fileURLWithPath: "/path/to/file")
-let itemCreator = try? fileURL.systemMetadata.get(kMDItemCreator as String)
-```
+- **``ExtendedAttributes``**: Direct access to macOS extended attributes (`xattr`) with strongly-typed names for common attributes like quarantine info and security settings
+- **``SystemMetadata``**: Access to Spotlight metadata (`kMDItem*`) with strongly-typed names for file properties, document info, media metadata, and more
 
 ---
 

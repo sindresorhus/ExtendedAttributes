@@ -1,113 +1,298 @@
 import Foundation
-import XCTest
+import Testing
 import ExtendedAttributes
 
-final class ExtendedAttributesTests: XCTestCase {
-	private var testFileURL: URL!
+@Suite("ExtendedAttributes")
+struct ExtendedAttributesTests {
+	@Test("Basic get/set operations")
+	func basicOperations() throws {
+		try TestHelpers.withTestFile { fileURL in
 
-	override func setUp() {
-		super.setUp()
-		let temporaryFileURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-		try? Data("Test".utf8).write(to: temporaryFileURL)
-		testFileURL = temporaryFileURL
+		let attributeName = "com.example.test"
+		let attributeValue = "Test Value".data(using: .utf8)!
+
+		try fileURL.extendedAttributes.set(attributeName, data: attributeValue)
+
+			let fetchedValue = try fileURL.extendedAttributes.get(attributeName)
+			#expect(fetchedValue == attributeValue)
+		}
 	}
 
-	override func tearDown() {
-		try? FileManager.default.removeItem(at: testFileURL)
-		testFileURL = nil
-		super.tearDown()
+	@Test("Get non-existent attribute returns nil")
+	func getNonExistentAttribute() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let value = try fileURL.extendedAttributes.get("non.existent.attribute")
+			#expect(value == nil)
+		}
 	}
 
-	func testGet() throws {
-		let attributeName = "testAttribute"
-		let attributeValue = "Test Value".toData
-		try testFileURL.extendedAttributes.set(attributeName, data: attributeValue)
+	@Test("Has attribute detection")
+	func hasAttribute() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.exists"
 
-		let fetchedValue = try testFileURL.extendedAttributes.get(attributeName)
-		XCTAssertEqual(fetchedValue, attributeValue, "Fetched attribute value should match the set value.")
+			#expect(try !fileURL.extendedAttributes.has(attributeName))
+
+			try fileURL.extendedAttributes.set(attributeName, data: Data())
+			#expect(try fileURL.extendedAttributes.has(attributeName))
+		}
 	}
 
-	func testSet() throws {
-		let attributeName = "testAttributeSet"
-		let attributeValue = "Another Test Value".toData
-		try testFileURL.extendedAttributes.set(attributeName, data: attributeValue)
+	@Test("Remove attribute")
+	func removeAttribute() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.removable"
+			let data = "To be removed".data(using: .utf8)!
 
-		let fetchedValue = try testFileURL.extendedAttributes.get(attributeName)
-		XCTAssertEqual(fetchedValue, attributeValue, "Set attribute value should be retrievable.")
+			try fileURL.extendedAttributes.set(attributeName, data: data)
+			#expect(try fileURL.extendedAttributes.has(attributeName))
+
+			try fileURL.extendedAttributes.remove(attributeName)
+			#expect(try !fileURL.extendedAttributes.has(attributeName))
+		}
 	}
 
-	func testHas() throws {
-		let attributeName = "testAttributeHas"
-		try testFileURL.extendedAttributes.set(attributeName, data: Data())
-
-		let exists = try testFileURL.extendedAttributes.has(attributeName)
-		XCTAssertTrue(exists, "Attribute should exist after being set.")
+	@Test("Remove non-existent attribute doesn't throw")
+	func removeNonExistentAttribute() throws {
+		try TestHelpers.withTestFile { fileURL in
+			#expect(throws: Never.self) {
+				try fileURL.extendedAttributes.remove("non.existent")
+			}
+		}
 	}
 
-	func testRemove() throws {
-		let attributeName = "testAttributeRemove"
-		try testFileURL.extendedAttributes.set(attributeName, data: Data())
-		try testFileURL.extendedAttributes.remove(attributeName)
+	@Test("Get all attribute names")
+	func allNames() throws {
+		try TestHelpers.withTestFile { fileURL in
+			try fileURL.extendedAttributes.set("com.example.test", data: Data("test".utf8))
 
-		let exists = try testFileURL.extendedAttributes.has(attributeName)
-		XCTAssertFalse(exists, "Attribute should not exist after being removed.")
+			let names = try fileURL.extendedAttributes.allNames()
+			#expect(names.contains("com.example.test"))
+		}
 	}
 
-	func testAllNames() throws {
-		let attributeName1 = "testAttribute1"
-		let attributeName2 = "testAttribute2"
-		try testFileURL.extendedAttributes.set(attributeName1, data: Data())
-		try testFileURL.extendedAttributes.set(attributeName2, data: Data())
 
-		let names = try testFileURL.extendedAttributes.allNames(withFlags: false)
-		XCTAssertTrue(names.contains(attributeName1) && names.contains(attributeName2), "All names should include set attributes.")
+	@Test("Empty data handling")
+	func emptyData() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.empty"
+			let emptyData = Data()
+
+			try fileURL.extendedAttributes.set(attributeName, data: emptyData)
+			let retrieved = try fileURL.extendedAttributes.get(attributeName)
+			#expect(retrieved == emptyData)
+			#expect(retrieved?.isEmpty == true)
+		}
 	}
 
-	func testGetPropertyListSerializedValue() throws {
-		let attributeName = "testPropertyList"
-		let attributeValue = ["Key": "Value"]
-		try testFileURL.extendedAttributes.setPropertyListSerializedValue(attributeName, value: attributeValue)
+	@Test("Works with directories")
+	func directorySupport() throws {
+		try TestHelpers.withTestDirectory { dirURL in
+			let attributeName = "com.example.dir"
+			let data = "Directory attribute".data(using: .utf8)!
 
-		let fetchedValue = try testFileURL.extendedAttributes.getPropertyListSerializedValue(attributeName, type: [String: String].self)
-		XCTAssertEqual(fetchedValue, attributeValue, "Fetched property list should match the set value.")
+			try dirURL.extendedAttributes.set(attributeName, data: data)
+			#expect(try dirURL.extendedAttributes.get(attributeName) == data)
+		}
 	}
 
-	func testSetPropertyListSerializedValue() throws {
-		let attributeName = "testPropertyListSet"
-		let attributeValue = ["AnotherKey": "AnotherValue"]
-		try testFileURL.extendedAttributes.setPropertyListSerializedValue(attributeName, value: attributeValue)
+	@Test("Binary data handling")
+	func binaryData() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.binary"
+			let binaryData = Data([0x00, 0x01, 0x02, 0xFF, 0xFE, 0xFD])
 
-		let fetchedValue = try testFileURL.extendedAttributes.getPropertyListSerializedValue(attributeName, type: [String: String].self)
-		XCTAssertEqual(fetchedValue, attributeValue, "Set property list should be retrievable.")
+			try fileURL.extendedAttributes.set(attributeName, data: binaryData)
+			let retrieved = try fileURL.extendedAttributes.get(attributeName)
+			#expect(retrieved == binaryData)
+		}
+	}
+
+	@Test("Update existing attribute")
+	func updateExistingAttribute() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.updatable"
+			let originalData = "Original".data(using: .utf8)!
+			let updatedData = "Updated".data(using: .utf8)!
+
+			try fileURL.extendedAttributes.set(attributeName, data: originalData)
+			#expect(try fileURL.extendedAttributes.get(attributeName) == originalData)
+
+			try fileURL.extendedAttributes.set(attributeName, data: updatedData)
+			#expect(try fileURL.extendedAttributes.get(attributeName) == updatedData)
+		}
+	}
+
+	@Test("Invalid URL throws error")
+	func invalidURL() throws {
+		let invalidURL = URL(string: "https://example.com")!
+
+		#expect(throws: CocoaError.self) {
+			try invalidURL.extendedAttributes.set("test", data: Data())
+		}
+
+		#expect(throws: CocoaError.self) {
+			_ = try invalidURL.extendedAttributes.get("test")
+		}
+	}
+
+	@Test("Non-existent file throws error")
+	func nonExistentFile() throws {
+		let nonExistentURL = URL(fileURLWithPath: "/non/existent/file.txt")
+
+		#expect(throws: Error.self) {
+			try nonExistentURL.extendedAttributes.set("test", data: Data())
+		}
+	}
+
+	@Test("Property list serialization")
+	func propertyListSerialization() throws {
+		try TestHelpers.withTestFile { fileURL in
+			// Test dictionary
+			let dictionary = ["key": "value", "number": "42"]
+			try fileURL.extendedAttributes.setPropertyListSerializedValue("dict", value: dictionary)
+			let retrievedDict: [String: String]? = try fileURL.extendedAttributes.getPropertyListSerializedValue("dict", type: [String: String].self)
+			#expect(retrievedDict == dictionary)
+
+			// Test array
+			let array = ["one", "two", "three"]
+			try fileURL.extendedAttributes.setPropertyListSerializedValue("array", value: array)
+			let retrievedArray: [String]? = try fileURL.extendedAttributes.getPropertyListSerializedValue("array", type: [String].self)
+			#expect(retrievedArray == array)
+		}
 	}
 }
 
-final class SystemMetadataTests: XCTestCase {
-	private var testFileURL: URL!
+@Suite("ExtendedAttributes Flags")
+struct ExtendedAttributesFlagsTests {
+	@Test("Set attribute with noExport flag")
+	func noExportFlag() throws {
+		try TestHelpers.withTestFile { fileURL in
 
-	override func setUp() {
-		super.setUp()
-		let temporaryFileURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-		try? Data("Test".utf8).write(to: temporaryFileURL)
-		testFileURL = temporaryFileURL
+		let attributeName = "com.example.noexport"
+		let data = "No export".data(using: .utf8)!
+
+		try fileURL.extendedAttributes.set(attributeName, data: data, flags: .noExport)
+
+		// Verify flag is applied by checking names with flags
+		let allNamesWithFlags = try fileURL.extendedAttributes.allNames(withFlags: true)
+			let nameWithFlag = allNamesWithFlags.first { $0.contains(attributeName) }
+			#expect(nameWithFlag?.contains("#") == true)
+		}
 	}
 
-	override func tearDown() {
-		try? FileManager.default.removeItem(at: testFileURL)
-		testFileURL = nil
-		super.tearDown()
+	@Test("Set attribute with contentDependent flag")
+	func contentDependentFlag() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.contentdep"
+			let data = "Content dependent".data(using: .utf8)!
+
+			try fileURL.extendedAttributes.set(attributeName, data: data, flags: .contentDependent)
+
+			// Verify flag is applied
+			let allNamesWithFlags = try fileURL.extendedAttributes.allNames(withFlags: true)
+			let nameWithFlag = allNamesWithFlags.first { $0.contains(attributeName) }
+			#expect(nameWithFlag != nil)
+		}
 	}
 
-	func testMetadata() throws {
+	@Test("Set attribute with multiple flags")
+	func multipleFlags() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.multiflags"
+			let data = "Multiple flags".data(using: .utf8)!
+
+			let flags: ExtendedAttributes.Flags = [.noExport, .syncable]
+			try fileURL.extendedAttributes.set(attributeName, data: data, flags: flags)
+
+			// Verify flags are applied
+			let allNamesWithFlags = try fileURL.extendedAttributes.allNames(withFlags: true)
+			let nameWithFlag = allNamesWithFlags.first { $0.contains(attributeName) }
+			#expect(nameWithFlag != nil)
+		}
+	}
+
+	@Test("Get names with and without flags")
+	func namesWithAndWithoutFlags() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let attributeName = "com.example.flagtest"
+			let data = "Flag test".data(using: .utf8)!
+
+			try fileURL.extendedAttributes.set(attributeName, data: data, flags: .noExport)
+
+			let namesWithFlags = try fileURL.extendedAttributes.allNames(withFlags: true)
+			let namesWithoutFlags = try fileURL.extendedAttributes.allNames(withFlags: false)
+
+			let withFlag = namesWithFlags.first { $0.contains(attributeName) }
+			let withoutFlag = namesWithoutFlags.first { $0.contains(attributeName) }
+
+			#expect(withFlag?.contains("#") == true)
+			#expect(withoutFlag == attributeName)
+		}
+	}
+}
+
+@Suite("SystemMetadata")
+struct SystemMetadataTests {
+	@Test("Set and get metadata")
+	func setGetMetadata() throws {
+		try TestHelpers.withTestFile { fileURL in
+
 		let key = "kMDItemDescription"
 		let value = "Test Description"
-		try testFileURL.systemMetadata.set(key, value: value)
 
-		let fetchedValue: String? = try testFileURL.systemMetadata.get(key, type: String.self)
-		XCTAssertEqual(fetchedValue, value, "The fetched value should match the set value.")
+		try fileURL.systemMetadata.set(key, value: value)
+		let retrieved = try fileURL.systemMetadata.get(key, type: String.self)
+
+			#expect(retrieved == value)
+		}
 	}
-}
 
-extension String {
-	var toData: Data { Data(utf8) }
+	@Test("Has metadata")
+	func hasMetadata() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let key = "kMDItemKeywords"
+
+			#expect(try !fileURL.systemMetadata.has(key))
+
+			try fileURL.systemMetadata.set(key, value: ["test", "keywords"])
+			#expect(try fileURL.systemMetadata.has(key))
+		}
+	}
+
+	@Test("Remove metadata")
+	func removeMetadata() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let key = "kMDItemComment"
+			let value = "To be removed"
+
+			try fileURL.systemMetadata.set(key, value: value)
+			#expect(try fileURL.systemMetadata.has(key))
+
+			try fileURL.systemMetadata.remove(key)
+			#expect(try !fileURL.systemMetadata.has(key))
+		}
+	}
+
+	@Test("Get non-existent metadata returns nil")
+	func nonExistentMetadata() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let value = try fileURL.systemMetadata.get("kMDItemNonExistent", type: String.self)
+			#expect(value == nil)
+		}
+	}
+
+	@Test("Metadata uses correct namespace")
+	func metadataNamespace() throws {
+		try TestHelpers.withTestFile { fileURL in
+			let key = "TestKey"
+			let value = "TestValue"
+
+			try fileURL.systemMetadata.set(key, value: value)
+
+			let allNames = try fileURL.extendedAttributes.allNames(withFlags: false)
+			let expectedName = "com.apple.metadata:TestKey"
+			#expect(allNames.contains(expectedName))
+		}
+	}
 }
