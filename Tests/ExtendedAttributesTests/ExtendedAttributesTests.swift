@@ -2,12 +2,13 @@ import Foundation
 import Testing
 import ExtendedAttributes
 
+// swiftlint:disable discouraged_optional_collection non_optional_string_data_conversion
+
 @Suite("ExtendedAttributes")
 struct ExtendedAttributesTests {
 	@Test("Basic get/set operations")
 	func basicOperations() throws {
 		try TestHelpers.withTestFile { fileURL in
-
 		let attributeName = "com.example.test"
 		let attributeValue = "Test Value".data(using: .utf8)!
 
@@ -168,7 +169,6 @@ struct ExtendedAttributesFlagsTests {
 	@Test("Set attribute with noExport flag")
 	func noExportFlag() throws {
 		try TestHelpers.withTestFile { fileURL in
-
 		let attributeName = "com.example.noexport"
 		let data = "No export".data(using: .utf8)!
 
@@ -237,7 +237,6 @@ struct SystemMetadataTests {
 	@Test("Set and get metadata")
 	func setGetMetadata() throws {
 		try TestHelpers.withTestFile { fileURL in
-
 		let key = "kMDItemDescription"
 		let value = "Test Description"
 
@@ -296,3 +295,5 @@ struct SystemMetadataTests {
 		}
 	}
 }
+
+// swiftlint:enable discouraged_optional_collection non_optional_string_data_conversion

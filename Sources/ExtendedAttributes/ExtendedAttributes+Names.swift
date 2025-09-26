@@ -121,8 +121,8 @@ extension ExtendedAttributes.Name {
 	public static func data(name: String) -> ExtendedAttributes.Name<Data?> {
 		.init(
 			name: name,
-			get: {
-				api in try api.get(name)
+			get: { api in
+				try api.get(name)
 			},
 			set: { api, value, flags in
 				guard let value else {

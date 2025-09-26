@@ -7,17 +7,19 @@ struct StronglyTypedNamesTests {
 	@Test("Custom strongly-typed name creation")
 	func customNameCreation() throws {
 		try TestHelpers.withTestFile { fileURL in
+			let customName = ExtendedAttributes.Name<String>(
+				name: "com.example.custom",
+				get: { api in
+					guard let data = try api.get("com.example.custom") else {
+						return nil
+					}
 
-		let customName = ExtendedAttributes.Name<String>(
-			name: "com.example.custom",
-			get: { api in
-				guard let data = try api.get("com.example.custom") else { return nil }
-				return String(data: data, encoding: .utf8)
-			},
-			set: { api, value, flags in
-				try api.set("com.example.custom", data: Data(value.utf8), flags: flags)
-			}
-		)
+					return String(data: data, encoding: .utf8)
+				},
+				set: { api, value, flags in
+					try api.set("com.example.custom", data: Data(value.utf8), flags: flags)
+				}
+			)
 
 			try fileURL.extendedAttributes.set(customName, value: "Custom Value")
 			#expect(try fileURL.extendedAttributes.get(customName) == "Custom Value")
@@ -31,7 +33,6 @@ struct StronglyTypedNamesTests {
 	@Test("Common predefined attributes")
 	func commonPredefinedAttributes() throws {
 		try TestHelpers.withTestFile { fileURL in
-
 			// Test string attributes
 			try fileURL.extendedAttributes.set(.quarantine, value: "test-quarantine")
 			#expect(try fileURL.extendedAttributes.get(.quarantine) == .some("test-quarantine"))
@@ -63,7 +64,7 @@ struct StronglyTypedNamesTests {
 			#expect(try fileURL.extendedAttributes.get(dataName) == testData)
 
 			// Property list factory
-			let dictName: ExtendedAttributes.Name<[String: String]?> = .propertyList(name: "com.example.dict", type: [String: String].self)
+			let dictName: ExtendedAttributes.Name<[String: String]?> = .propertyList(name: "com.example.dict", type: [String: String].self) // swiftlint:disable:this discouraged_optional_collection
 			try fileURL.extendedAttributes.set(dictName, value: ["key": "value"])
 			#expect(try fileURL.extendedAttributes.get(dictName) == ["key": "value"])
 		}

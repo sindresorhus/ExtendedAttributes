@@ -7,7 +7,6 @@ struct SystemMetadataNamesTests {
 	@Test("Common system metadata attributes")
 	func commonSystemMetadataAttributes() throws {
 		try TestHelpers.withTestFile { fileURL in
-
 			// Test setting and getting system metadata
 			try fileURL.systemMetadata.set(.creator, value: "TestApp")
 			let creator = try fileURL.systemMetadata.get(.creator)
@@ -26,7 +25,6 @@ struct SystemMetadataNamesTests {
 	@Test("URL conversion for whereFroms")
 	func whereFromsURLConversion() throws {
 		try TestHelpers.withTestFile { fileURL in
-
 			let testURLs = [
 				URL(string: "https://example.com/file.zip")!,
 				URL(string: "https://github.com/user/repo")!
